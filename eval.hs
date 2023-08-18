@@ -41,10 +41,14 @@ evalE envrmnt (Let b e) =
 
   case b of 
 	[] -> evalE envrmnt e;
-	[(Bind x _ [] e1)] -> evalE newEnvrmt e where newEnvrmt = E.add envrmnt (x, evalE envrmnt e1); 
-	[(Bind func _ args e1)] -> evalE newEnvrmt e where newEnvrmt = E.add envrmnt (func, Closure envrmnt func args e1);
-	(Bind x _ [] e1):bindings -> evalE newEnvrmt (Let bindings e) where newEnvrmt = E.add envrmnt (x, evalE envrmnt e1);   
-	(Bind func _ args e1):bindings -> evalE newEnvrmt (Let bindings e) where newEnvrmt = E.add envrmnt (func, Closure envrmnt func args e1);   
+	[(Bind x _ [] e1)] -> evalE newEnvrmt e where 
+ 			      newEnvrmt = E.add envrmnt (x, evalE envrmnt e1); 
+	[(Bind func _ args e1)] -> evalE newEnvrmt e where 
+ 				   newEnvrmt = E.add envrmnt (func, Closure envrmnt func args e1);
+	(Bind x _ [] e1):bindings -> evalE newEnvrmt (Let bindings e) where 
+ 				     newEnvrmt = E.add envrmnt (x, evalE envrmnt e1);   
+	(Bind func _ args e1):bindings -> evalE newEnvrmt (Let bindings e) where 
+ 					  newEnvrmt = E.add envrmnt (func, Closure envrmnt func args e1);   
 
 -- Primitive operations
 
@@ -90,9 +94,9 @@ evalE envrmnt (App (App (Prim Lt) e1) e2) = B (a < b) where I a = evalE envrmnt 
 evalE envrmnt (App (App (Prim Le) e1) e2) = B (a <= b) where I a = evalE envrmnt e1; I b = evalE envrmnt e2;
 evalE envrmnt (App (App (Prim Eq) e1) e2) = B (a == b) where I a = evalE envrmnt e1; I b = evalE envrmnt e2;
 -- not equals in haskell is written as: /= or not (x == y), 
--- refernces - https://stackoverflow.com/questions/34415487/what-does-the-operator-in-haskell-mean#:~:text=The%20%2F%3D%20operator%20means%20%22is,a%20diagonal%20line%20through%20it).&text=It's%20the%20%22not%20equal%20to%22%20operator.
 evalE envrmnt (App (App (Prim Ne) e1) e2) = B (a /= b) where I a = evalE envrmnt e1; I b = evalE envrmnt e2;
-evalE envrmnt (App (App (Prim Quot) e1) e2) = if b == 0 then error "division by zero" else I (quot a b) where I a = evalE envrmnt e1; I b = evalE envrmnt e2;
+evalE envrmnt (App (App (Prim Quot) e1) e2) = if b == 0 then error "division by zero" else I (quot a b) 
+					      where I a = evalE envrmnt e1; I b = evalE envrmnt e2;
 
 -- Evaluation of if -expression
 evalE envrmnt (If e b1 b2) = 
@@ -131,13 +135,21 @@ evalE envrmnt (Recfun binding) =
 evalE envrmnt (App (Var func) exp) =
 
 	case E.lookup envrmnt func of
-		Just (Closure env f args e)  -> if (length args == 1) then (evalE newEnvrmt e) else if (length args == 0) then (evalE newEnvrmt1 e) else (Closure newEnvrmt f (tail args) e) where newEnvrmt1 = E.add envrmnt (f, (Closure env f args e)); newEnvrmt = E.add newEnvrmt1 (args !! 0, evalE envrmnt exp);
+		Just (Closure env f args e)  -> if (length args == 1) then (evalE newEnvrmt e) 0
+  						else if (length args == 0) then (evalE newEnvrmt1 e)
+						else (Closure newEnvrmt f (tail args) e) 
+      						where newEnvrmt1 = E.add envrmnt (f, (Closure env f args e)); 
+	    					newEnvrmt = E.add newEnvrmt1 (args !! 0, evalE envrmnt exp);
 		Nothing -> error "This does not evaluate to any value." 
 
 evalE envrmnt (App exp1 exp) =
 
 	case evalE envrmnt exp1 of
-		(Closure env f args e) -> if (length args == 1) then (evalE newEnvrmt e) else if (length args == 0) then (evalE newEnvrmt1 e) else (Closure newEnvrmt f (tail args) e) where newEnvrmt1 = E.add envrmnt (f, (Closure env f args e)); newEnvrmt = E.add newEnvrmt1 (args !! 0, evalE envrmnt exp);
+		(Closure env f args e) -> if (length args == 1) then (evalE newEnvrmt e) 
+  					  else if (length args == 0) then (evalE newEnvrmt1 e) 
+	 				  else (Closure newEnvrmt f (tail args) e) 
+	                                  where newEnvrmt1 = E.add envrmnt (f, (Closure env f args e)); 
+				          newEnvrmt = E.add newEnvrmt1 (args !! 0, evalE envrmnt exp);
 
 -- error handling, for the non- handled cases.
 evalE envrmnt e = error "implement me!"
